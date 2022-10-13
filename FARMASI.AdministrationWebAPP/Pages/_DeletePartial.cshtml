@@ -1,0 +1,85 @@
+﻿<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form method="post" id="frmDelete">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteModalLabel">Kayıt Silinecek</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-4 hide" id="deleteAlertContainer">
+                        <div class="" id="deleteTxtAlert"></div>
+                    </div>
+                    <div class="mb-4">
+                        <input type="text" class="form-control" id="mdlDeleteId" name="name" placeholder="Adı" readonly />
+                    </div>
+                    <div class="mb-4">
+                        <input type="text" class="form-control" id="mdlDeleteName" name="name" placeholder="Adı" readonly />
+                    </div>
+                    <div class="mb-4">
+                        <input type="number" class="form-control" id="mdlDeleteUnitPrice" name="unitPrice" placeholder="Birim Fiyatı" readonly />
+                    </div>
+                    <div>
+                        <input type="number" class="form-control" id="mdlDeleteQuantityInStock" name="quantityInStock" placeholder="Stok Miktarı" readonly />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-danger" id="btnDelete">Sil</button>
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">İptal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(() => {
+        $(document).ready(() => {
+            $('#btnDelete').on('click', () => {
+                var jsonData = JSON.stringify({
+                    "Id": $('#mdlDeleteId').val(),
+                    "Name": $('#mdlDeleteName').val(),
+                    "UnitPrice": parseInt($('#mdlDeleteUnitPrice').prop('value')),
+                    "QuantityInStock": parseInt($('#mdlDeleteQuantityInStock').prop('value'))
+                });
+
+                $.ajax({
+                    url: 'http://localhost:21000/api/Products',
+                    type: 'DELETE',
+                    data: jsonData,
+                    beforeSend: () => {
+                        if (!$('#deleteAlertContainer').hasClass('hide')) {
+                            $('#deleteAlertContainer').addClass('hide');
+                            $('#deleteTxtAlert').removeAttr('class');
+                        }
+                    },
+                    success: (x, y) => {
+                        if (x.errorOccurred && x.errorOccurred === true) {
+                            $('#deleteTxtAlert').html(x.errorMessage);
+                            $('#deleteTxtAlert').addClass('alert').addClass('alert-danger');
+                        }
+                        else {
+                            $('#deleteTxtAlert').html('İşlem başarılı ana sayfaya yönlendiriliyorsunuz');
+                            $('#deleteTxtAlert').addClass('alert').addClass('alert-success');
+                            setTimeout(() => {
+                                location.href = '@Url.Action("Index")';
+                            }, 1500);
+                        }
+                    },
+                    error: (x) => {
+                        $('#deleteTxtAlert').html(x.statusText);
+                        $('#deleteTxtAlert').addClass('alert').addClass('alert-danger');
+                    },
+                    complete: () => {
+                        if ($('#deleteAlertContainer').hasClass('hide')) {
+                            $('#deleteAlertContainer').removeClass('hide');
+                        }
+                    },
+                    contentType: 'application/json'
+                })
+            });
+        });
+    })
+</script>

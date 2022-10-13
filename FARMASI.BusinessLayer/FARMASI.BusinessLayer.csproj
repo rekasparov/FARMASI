@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FARMASI.DataTransferObject\FARMASI.DataTransferObject.csproj" />
+    <ProjectReference Include="..\FARMASI.UnitOfWork\FARMASI.UnitOfWork.csproj" />
+  </ItemGroup>
+
+</Project>

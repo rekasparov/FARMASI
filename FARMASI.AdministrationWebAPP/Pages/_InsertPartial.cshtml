@@ -1,0 +1,109 @@
+﻿<div class="modal fade" id="insertModal" tabindex="-1" role="dialog" aria-labelledby="insertModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" id="frmInsert">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="insertModalLabel">Yeni Kayıt</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-4 hide" id="insertAlertContainer">
+                        <div class="" id="insertTxtAlert"></div>
+                    </div>
+                    <div class="mb-4">
+                        <input type="text" class="form-control" id="mdlInsertName" name="name" placeholder="Adı" required />
+                    </div>
+                    <div class="mb-4">
+                        <input type="number" class="form-control" id="mdlInsertUnitPrice" name="unitPrice" placeholder="Birim Fiyatı" required />
+                    </div>
+                    <div>
+                        <input type="number" class="form-control" id="mdlInsertQuantityInStock" name="quantityInStock" placeholder="Stok Miktarı" required />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-success" id="btnSave">Kaydet</button>
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">İptal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(() => {
+        $(document).ready(() => {
+            $('#frmInsert').validate({
+                errorClass: 'validation-error',
+                rules: {
+                    name: {
+                        required: true
+                    },
+                    unitPrice: {
+                        required: true
+                    },
+                    quantityInStock: {
+                        required: true
+                    }
+                },
+                messages: {
+                    name: {
+                        required: "Bu alan boş bırakılamaz"
+                    },
+                    unitPrice: {
+                        required: "Bu alan boş bırakılamaz"
+                    },
+                    quantityInStock: {
+                        required: "Bu alan boş bırakılamaz"
+                    }
+                }
+            });
+
+            $('#btnSave').on('click', () => {
+                if ($('#frmInsert').valid()) {
+                    var jsonData = JSON.stringify({
+                        "name": $('#mdlInsertName').val(),
+                        "unitPrice": parseInt($('#mdlInsertUnitPrice').prop('value')),
+                        "quantityInStock": parseInt($('#mdlInsertQuantityInStock').prop('value'))
+                    });
+
+                    $.ajax({
+                        url: 'http://localhost:21000/api/Products',
+                        method: 'POST',
+                        data: jsonData,
+                        beforeSend: () => {
+                            if (!$('#insertAlertContainer').hasClass('hide')) {
+                                $('#insertAlertContainer').addClass('hide');
+                                $('#insertTxtAlert').removeAttr('class');
+                            }
+                        },
+                        success: (x, y) => {
+                            if (x.errorOccurred && x.errorOccurred === true) {
+                                $('#insertTxtAlert').html(x.errorMessage);
+                                $('#insertTxtAlert').addClass('alert').addClass('alert-danger');
+                            }
+                            else {
+                                $('#insertTxtAlert').html('İşlem başarılı ana sayfaya yönlendiriliyorsunuz');
+                                $('#insertTxtAlert').addClass('alert').addClass('alert-success');
+                                setTimeout(() => {
+                                    location.href = '@Url.Action("Index")';
+                                }, 1500);
+                            }
+                        },
+                        error: (x, y) => {
+                            $('#insertTxtAlert').html(x.statusText);
+                            $('#insertTxtAlert').addClass('alert').addClass('alert-danger');
+                        },
+                        complete: () => {
+                            if ($('#insertAlertContainer').hasClass('hide')) {
+                                $('#insertAlertContainer').removeClass('hide');
+                            }
+                        },
+                        contentType: 'application/json'
+                    })
+                }
+            });
+        });
+    })
+</script>

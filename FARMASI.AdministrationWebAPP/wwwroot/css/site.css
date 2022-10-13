@@ -1,0 +1,15 @@
+﻿.validation-error {
+    color: #ff0000;
+}
+
+.nav-link-active {
+    color: #007bff !important;
+}
+
+.td-process-column {
+    width: 180px;
+}
+
+.td-order-column {
+    width: 160px;
+}

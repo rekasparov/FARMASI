@@ -1,0 +1,29 @@
+﻿@page
+@model FARMASI.AdministrationWebAPP.Pages.IndexModel
+@{
+}
+
+<h2 class="mb-5 border-bottom pb-2">Ürünler</h2>
+
+<table class="table">
+    <thead>
+        <tr class="border-0">
+            <td colspan="9">
+                <button class="btn btn-sm btn-outline-success" data-toggle="modal" data-target="#insertModal">Yeni Kayıt</button>
+            </td>
+        </tr>
+        <tr>
+            <td>İşlemler</td>
+            <td>Id</td>
+            <td>Adı</td>
+            <td>Birim Fiyatı</td>
+            <td>Stok Sayısı</td>
+        </tr>
+    </thead>
+    <tbody>
+    </tbody>
+</table>
+
+<partial name="_InsertPartial" />
+<partial name="_DeletePartial" />
+<partial name="_EditPartial" />

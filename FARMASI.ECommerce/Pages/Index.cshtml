@@ -1,0 +1,281 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "E-Commerce";
+}
+
+<div class="mb-4 custom-hide" id="alertContainer">
+    <div class="" id="txtAlert"></div>
+</div>
+
+<div id="productContainer">
+
+</div>
+
+<script>
+    $(() => {
+        $(document).ready(() => {
+
+            var clientId = null;
+
+            init = () => {
+                clientId = localStorage.getItem('clientId');
+
+                if (clientId == null) {
+                    clientId = createGuid();
+                    localStorage.setItem('clientId', clientId);
+                }
+
+                var connection = new signalR.HubConnectionBuilder().withUrl('http://localhost:21000/NotificationHub', {
+                    accessTokenFactory: () => clientId
+                }).withAutomaticReconnect(5000).build();
+
+                connection.on('ShoppingCartUpdated', () => {
+                    getCart();
+                });
+
+                connection.on('ProductStockUpdated', (productId, quantityInStock) => {
+                    $('#' + productId).html(quantityInStock + ' adet stok var');
+                    $('#txtAlert').html('İşlem başarılı');
+                    $('#txtAlert').addClass('alert').addClass('alert-success');
+                    if ($('#alertContainer').hasClass('custom-hide')) {
+                        $('#alertContainer').removeClass('custom-hide');
+                    }
+                    setTimeout(() => {
+                        if (!$('#alertContainer').hasClass('custom-hide')) {
+                            $('#alertContainer').addClass('custom-hide');
+                            $('#txtAlert').removeAttr('class');
+                            $('#txtAlert').html('');
+                        }
+                    }, 1500);
+                });
+
+                connection.on('StockNotAvailable', (productId) => {
+                    $('#txtAlert').html('Bu ürün için stok müsait değil');
+                    $('#txtAlert').addClass('alert').addClass('alert-danger');
+                    if ($('#alertContainer').hasClass('custom-hide')) {
+                        $('#alertContainer').removeClass('custom-hide');
+                    }
+                });
+
+                connection.start();
+
+                getProducts();
+
+                getCart();
+            };
+
+            function getProducts() {
+                $.ajax({
+                    async: true,
+                    url: 'http://localhost:21000/api/Products',
+                    type: 'GET',
+                    beforeSend: () => {
+                        if (!$('#alertContainer').hasClass('custom-hide')) {
+                            $('#alertContainer').addClass('custom-hide');
+                            $('#txtAlert').removeAttr('class');
+                            $('#txtAlert').html('');
+                        }
+                    },
+                    success: (x, y) => {
+                        if (x.errorOccurred && x.errorOccurred === true) {
+                            $('#txtAlert').html(x.errorMessage);
+                            $('#txtAlert').addClass('alert').addClass('alert-danger');
+                            if ($('#alertContainer').hasClass('custom-hide')) {
+                                $('#alertContainer').removeClass('custom-hide');
+                            }
+                        }
+                        else {
+                            var html = '';
+                            if (x.data) {
+                                var dataLength = x.data.length;
+                                var rowCount = 0;
+                                if (dataLength <= 4)
+                                    rowCount = 1;
+                                else {
+                                    if (dataLength % 4 != 0) {
+                                        rowCount++;
+                                        dataLength -= (dataLength % 4);
+                                    }
+                                    rowCount += dataLength / 4;
+                                }
+                                for (var index = 0; index < rowCount; index++) {
+                                    if (index == 0)
+                                        html += '<div class="row mt-5 mb-5">';
+                                    else
+                                        html += '<div class="row mb-5">';
+                                    var startIndex = index * 4;
+                                    var endIndex = startIndex + 4;
+                                    for (var innerIndex = startIndex; innerIndex < endIndex; innerIndex++) {
+                                        if (!x.data[innerIndex])
+                                            break;
+                                        var id = x.data[innerIndex].id;
+                                        var name = x.data[innerIndex].name;
+                                        var unitPrice = x.data[innerIndex].unitPrice;
+                                        var quantityInStock = x.data[innerIndex].quantityInStock;
+
+                                        html += createACardObject(id, name, unitPrice, quantityInStock);
+                                    }
+                                    html += '</div>';
+                                }
+                            }
+                            $('#productContainer').html(html);
+
+                            btnAddToCart_bindClickEvent();
+                        }
+                    },
+                    error: (x, y) => {
+                        $('#txtAlert').html(x.statusText);
+                        $('#txtAlert').addClass('alert').addClass('alert-danger');
+                        if ($('#alertContainer').hasClass('custom-hide')) {
+                            $('#alertContainer').removeClass('custom-hide');
+                        }
+                    },
+                    contentType: 'application/json'
+                })
+            }
+
+            function getCart() {
+                $.ajax({
+                    async: true,
+                    url: ('http://localhost:21000/api/ShoppingCarts?id=' + clientId),
+                    type: 'GET',
+                    beforeSend: () => {
+                        if (!$('#alertContainer').hasClass('custom-hide')) {
+                            $('#alertContainer').addClass('custom-hide');
+                            $('#txtAlert').removeAttr('class');
+                            $('#txtAlert').html('');
+                        }
+                    },
+                    success: (x, y) => {
+                        if (x.errorOccurred && x.errorOccurred === true) {
+                            $('#txtAlert').html(x.errorMessage);
+                            $('#txtAlert').addClass('alert').addClass('alert-danger');
+                            if ($('#alertContainer').hasClass('custom-hide')) {
+                                $('#alertContainer').removeClass('custom-hide');
+                            }
+                        }
+                        else {
+                            if (x.data) {
+                                var productCountOnCart = x.data.length;
+                                $('#txtProductCountOnCart').html('Sepetinizde ' + productCountOnCart + ' ürün var')
+                                var innerHtml = '';
+                                for (var index = 0; index < productCountOnCart; index++) {
+                                    innerHtml += createProductObjectForCart(x.data[index].productId, x.data[index].product.name, x.data[index].quantity);
+                                }
+                                $('#ddProducts').html(innerHtml);
+
+                                btnRemoveFromCart_bindClickEvent();
+                            }
+                        }
+                    },
+                    error: (x, y) => {
+                        $('#txtAlert').html(x.statusText);
+                        $('#txtAlert').addClass('alert').addClass('alert-danger');
+                        if ($('#alertContainer').hasClass('custom-hide')) {
+                            $('#alertContainer').removeClass('custom-hide');
+                        }
+                    },
+                    contentType: 'application/json'
+                })
+            }
+
+            function createACardObject(id, name, unitPrice, quantityInStock) {
+                var html = '';
+                html += '<div class="col-md-3">';
+                html += '<div class="card">';
+                html += '<div class="card-body">';
+                html += ' <div class="mb-3">';
+                html += name;
+                html += '</div>';
+                html += '<h5 class="mb-3 font-weight-bold">';
+                html += unitPrice;
+                html += ' TL</h5>';
+                html += '<h6 class="mb-4" id="';
+                html += id;
+                html += '">';
+                html += quantityInStock;
+                html += ' adet stok var</h6>';
+                html += '<button type="button" class="btn btn-primary btn-addToCart w-100" data-id="';
+                html += id;
+                html += '">Sepete Ekle</button>';
+                html += '</div>';
+                html += '</div>';
+                html += '</div>';
+
+                return html;
+            };
+
+            function createProductObjectForCart(productId, name, countOnCart) {
+                var html = '';
+                html += '<div class="dropdown-item">';
+                html += '<span>';
+                html += name;
+                html += ' <span class="badge badge-secondary">';
+                html += countOnCart
+                html += '</span><button class="btn btn-sm btn-danger btn-removeFromCart ml-4 dropright" data-id="';
+                html += productId
+                html += '">Sil</button></span>';
+                html += '</div>';
+                return html;
+            }
+
+            function createGuid() {
+                return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                    var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+                    return v.toString(16);
+                });
+            }
+
+            function btnRemoveFromCart_bindClickEvent() {
+                $('.btn-removeFromCart').on('click', (e) => {
+                    var dataId = $(e.target).data('id');
+                    var jsonData = JSON.stringify({
+                        id: clientId,
+                        productId: dataId,
+                        quantity: 1
+                    });
+                    $.ajax({
+                        url: 'http://localhost:21000/api/ShoppingCarts',
+                        type: 'DELETE',
+                        data: jsonData,
+                        beforeSend: () => {
+                            if (!$('#alertContainer').hasClass('custom-hide')) {
+                                $('#alertContainer').addClass('custom-hide');
+                                $('#txtAlert').removeAttr('class');
+                                $('#txtAlert').html('');
+                            }
+                        },
+                        contentType: 'application/json'
+                    })
+                });
+            }
+
+            function btnAddToCart_bindClickEvent() {
+                $('.btn-addToCart').on('click', (e) => {
+                    var dataId = $(e.target).data('id');
+                    var jsonData = JSON.stringify({
+                        id: clientId,
+                        productId: dataId,
+                        quantity: 1
+                    });
+                    $.ajax({
+                        url: 'http://localhost:21000/api/ShoppingCarts',
+                        type: 'POST',
+                        data: jsonData,
+                        beforeSend: () => {
+                            if (!$('#alertContainer').hasClass('custom-hide')) {
+                                $('#alertContainer').addClass('custom-hide');
+                                $('#txtAlert').removeAttr('class');
+                                $('#txtAlert').html('');
+                            }
+                        },
+                        contentType: 'application/json'
+                    })
+                });
+            }
+
+            init();
+        });
+    })
+</script>

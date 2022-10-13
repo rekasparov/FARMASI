@@ -1,0 +1,124 @@
+﻿<div class="modal fade" id="editModal" tabindex="-1" role="dialog" aria-labelledby="editModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="post" id="frmEdit">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editModalLabel">Kayıt Düzenle</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="mdlEditId" name="id" />
+                    <div class="mb-4 hide" id="editAlertContainer">
+                        <div class="" id="editTxtAlert"></div>
+                    </div>
+                    <div class="mb-4">
+                        <input type="text" class="form-control" id="mdlEditName" name="name" placeholder="Adı" required />
+                    </div>
+                    <div class="mb-4">
+                        <input type="number" class="form-control" id="mdlEditUnitPrice" name="unitPrice" placeholder="Birim Fiyatı" required />
+                    </div>
+                    <div>
+                        <input type="number" class="form-control" id="mdlEditQuantityInStock" name="quantityInStock" placeholder="Stok Miktarı" required />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-success" id="btnEdit">Kaydet</button>
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">İptal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(() => {
+        $(document).ready(() => {
+            $('#frmEdit').validate({
+                errorClass: 'validation-error',
+                rules: {
+                    name: {
+                        required: true
+                    },
+                    unitPrice: {
+                        required: true
+                    },
+                    quantityInStock: {
+                        required: true
+                    }
+                },
+                messages: {
+                    name: {
+                        required: "Bu alan boş bırakılamaz"
+                    },
+                    unitPrice: {
+                        required: "Bu alan boş bırakılamaz"
+                    },
+                    quantityInStock: {
+                        required: "Bu alan boş bırakılamaz"
+                    }
+                }
+            });
+
+            btnEdit_bindClickEvent = () => {
+                $('.btn-edit').on('click', (e) => {
+                    var dataId = $(e.target).data('id');
+                    var dataName = $(e.target).data('name');
+                    var dataUnitPrice = $(e.target).data('unitprice');
+                    var dataQuantityInStock = $(e.target).data('quantityinstock');
+                    $('#mdlEditId').attr('value', dataId);
+                    $('#mdlEditName').attr('value', dataName);
+                    $('#mdlEditUnitPrice').attr('value', dataUnitPrice);
+                    $('#mdlEditQuantityInStock').attr('value', dataQuantityInStock);
+                });
+            }
+
+            $('#btnEdit').on('click', () => {
+                if ($('#frmEdit').valid()) {
+                    var jsonData = JSON.stringify({
+                        "id": $('#mdlEditId').val(),
+                        "name": $('#mdlEditName').val(),
+                        "unitPrice": parseInt($('#mdlEditUnitPrice').prop('value')),
+                        "quantityInStock": parseInt($('#mdlEditQuantityInStock').prop('value'))
+                    });
+
+                    $.ajax({
+                        url: 'http://localhost:21000/api/Products',
+                        type: 'PUT',
+                        data: jsonData,
+                        beforeSend: () => {
+                            if (!$('#editAlertContainer').hasClass('hide')) {
+                                $('#editAlertContainer').addClass('hide');
+                                $('#editTxtAlert').removeAttr('class');
+                            }
+                        },
+                        success: (x, y) => {
+                            if (x.errorOccurred && x.errorOccurred === true) {
+                                $('#editTxtAlert').html(x.errorMessage);
+                                $('#editTxtAlert').addClass('alert').addClass('alert-danger');
+                            }
+                            else {
+                                $('#editTxtAlert').html('İşlem başarılı ana sayfaya yönlendiriliyorsunuz');
+                                $('#editTxtAlert').addClass('alert').addClass('alert-success');
+                                setTimeout(() => {
+                                    location.href = '@Url.Action("Index")';
+                                }, 1500);
+                            }
+                        },
+                        error: (x, y) => {
+                            $('#editTxtAlert').html(x.statusText);
+                            $('#editTxtAlert').addClass('alert').addClass('alert-danger');
+                        },
+                        complete: () => {
+                            if ($('#editAlertContainer').hasClass('hide')) {
+                                $('#editAlertContainer').removeClass('hide');
+                            }
+                        },
+                        contentType: 'application/json'
+                    })
+                }
+            });
+        });
+    })
+</script>
